@@ -1,7 +1,15 @@
 FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+
 ARG PYTHON_VERSION=3.6
 ARG WITH_TORCHVISION=1
 ARG DEBIAN_FRONTEND="noninteractive"
+
+# Add user
+ARG USERNAME=user
+ARG USER_ID
+ARG GROUP_ID
+RUN groupadd $USERNAME -g ${GROUP_ID}
+RUN useradd -g $GROUP_ID -m $USERNAME 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
          build-essential \
@@ -80,5 +88,5 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY setup.sh /setup.sh
 RUN chmod +x /setup.sh
 CMD [ "/setup.sh" ]
-CMD ["echo"]
+USER $USERNAME
 
