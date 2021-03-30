@@ -17,6 +17,19 @@
       year={2021},
     }
 
+**Docker Integration** 
+A Dockerfile and its corresponding build/run scripts are included i this forked CenterPoint repo. To run this repo with docker, simply build it and run. No need to follow all the instructions in the INSTALL readme. This build script will install `apex`, `nuscenes-devkit` and `spconv`. 
+```
+./build.sh --clean
+```
+And once it's done, run the image - this automatically mounts the CenterPoint folder into the image in the directory `/Workspace/projects/CenterPoint`. 
+```
+./run.sh
+```
+If you want to check that it works, run the demo. Download [centerpoint_pillar_512_demo](https://drive.google.com/drive/folders/1K_wHrBo6yRSG7H7UUjKI4rPnyEA8HvOp)) and put it in ```/Workspace/projects/CenterPoint/work_dirs/centerpoint_pillar_512_demo```. Then run the following. 
+```
+python tools/demo.py
+```
 
 ## NEWS
 
