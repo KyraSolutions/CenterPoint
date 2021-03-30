@@ -17,6 +17,24 @@
       year={2021},
     }
 
+## Modifications to the original
+### Docker Integration
+A Dockerfile and its corresponding build/run scripts are included in this forked CenterPoint repo. To run this repo with docker, simply build it and run. No need to follow all the instructions in the INSTALL readme. This build script will install `apex`, `nuscenes-devkit` and `spconv`. 
+```
+./build.sh --clean
+```
+And once it's done, run the image - this automatically mounts the CenterPoint folder into the image in the directory `/Workspace/projects/CenterPoint`. 
+```
+./run.sh
+```
+If you want to check that it works, run the demo. Download [centerpoint_pillar_512_demo](https://drive.google.com/drive/folders/1K_wHrBo6yRSG7H7UUjKI4rPnyEA8HvOp)) and put it in ```/Workspace/projects/CenterPoint/work_dirs/centerpoint_pillar_512_demo```. Then run the following. 
+```
+python tools/demo.py
+```
+### Minor Edits
+Modified demo.py
+- replaced 'cpu'/.cpu() with 'cuda'/.cuda() 
+- gt_annos were numpy arrays but detections were tensors, this made the program crash in when trying to run `np.isnan` on a tensor. So I just converted the tensors to numpy in demo.py 
 
 ## NEWS
 
