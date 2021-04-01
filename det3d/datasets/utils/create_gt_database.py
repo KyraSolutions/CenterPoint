@@ -101,7 +101,6 @@ def create_groundtruth_database(
                 names = names[mask]
                 gt_boxes = gt_boxes[mask]
 
-
         group_dict = {}
         group_ids = np.full([gt_boxes.shape[0]], -1, dtype=np.int64)
         if "group_ids" in annos:
