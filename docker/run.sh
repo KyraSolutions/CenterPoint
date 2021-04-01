@@ -2,10 +2,10 @@
 
 VOLUMES="--volume=/tmp/.X11-unix:/tmp/.X11-unix
 		 --volume=/etc/passwd:/etc/passwd 
-		 --volume=${PWD}/..:/Workspace/projects/CenterPoint"
+		 --volume=${PWD}/..:/home/user/workspace/CenterPoint
+		 --volume=/media/darren/Samsung_T5/datasets/nuScenes:/home/user/workspace/data/nuScenes"
 
 xhost +local:docker
-
 
 # env is for the pop up displays
 # ipc=host is required to increased the shared memory size of the docker container for pytorch dataloader
@@ -21,6 +21,6 @@ $VOLUMES \
 --user "$(id -u):$(id -g)" \
 --runtime=nvidia \
 --ipc=host \
---workdir="/Workspace/projects/CenterPoint" \
+--workdir="/home/user/workspace" \
 --entrypoint="/bin/bash" \
 centerpoint:latest

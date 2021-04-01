@@ -9,7 +9,10 @@ ARG USERNAME=user
 ARG USER_ID
 ARG GROUP_ID
 RUN groupadd $USERNAME -g ${GROUP_ID}
-RUN useradd -g $GROUP_ID -m $USERNAME 
+RUN useradd -g $GROUP_ID --create-home --shell /bin/bash $USERNAME 
+ENV HOME=/home/$USERNAME
+ENV WORKSPACE=/home/$USERNAME/workspace
+
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
          build-essential \
@@ -48,8 +51,8 @@ RUN conda install -c pytorch\
     cudatoolkit=10.0 \
     && conda clean -ya
 
-RUN mkdir -p /Workspace/projects/CenterPoint
-WORKDIR /Workspace/projects/CenterPoint
+RUN mkdir -p $WORKSPACE/CenterPoint
+WORKDIR $WORKSPACE/CenterPoint
 
 # Install nuscenes-devkit
 RUN git clone https://github.com/tianweiy/nuscenes-devkit
@@ -70,13 +73,13 @@ RUN cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --globa
 # Install spconv
 RUN apt-get update && apt-get install -y libboost-all-dev
 RUN git clone https://github.com/traveller59/spconv.git --recursive
-WORKDIR /Workspace/projects/CenterPoint/spconv
+WORKDIR $WORKSPACE/CenterPoint/spconv
 RUN git checkout 7342772
 RUN python setup.py bdist_wheel
 RUN cd ./dist && pip install *
 
 # Set python path for loading of modules defined in folders with __init__.py
-# ENV PYTHONPATH="${PYTHONPATH}:/Workspace/projects/CenterPoint"
+# ENV PYTHONPATH="${PYTHONPATH}:$WORKSPACE/CenterPoint"
 
 # Install required files for the program
 COPY requirements.txt /tmp/
@@ -88,5 +91,9 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY setup.sh /setup.sh
 RUN chmod +x /setup.sh
 CMD [ "/setup.sh" ]
-USER $USERNAME
 
+# Add aliases for easy navigation
+USER $USERNAME
+RUN echo "alias data='cd /home/user/workspace/data/nuScenes/full'" >> ~/.bashrc
+RUN echo "alias cpt='cd /home/user/workspace/CenterPoint'" >> ~/.bashrc
+RUN echo "alias ..='cd ..'" >> ~/.bashrc
