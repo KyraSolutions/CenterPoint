@@ -313,7 +313,6 @@ class CenterHead(nn.Module):
                 preds_dict[key] = val.permute(0, 2, 3, 1).contiguous()
 
             batch_size = preds_dict['hm'].shape[0]
-
             if double_flip:
                 assert batch_size % 4 == 0, print(batch_size)
                 batch_size = int(batch_size / 4)

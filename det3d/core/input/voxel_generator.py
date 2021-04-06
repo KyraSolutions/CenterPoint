@@ -18,7 +18,7 @@ class VoxelGenerator:
 
     def generate(self, points, max_voxels=-1):
         if max_voxels == -1:
-            max_voxels=self._max_voxels
+            max_voxels=self._max_voxels[1] # might want to change this indexing of [1] later
 
         return points_to_voxel(
             points,

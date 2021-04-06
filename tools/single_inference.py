@@ -15,10 +15,12 @@ from sensor_msgs.msg import PointCloud2, PointField
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray
 from pyquaternion import Quaternion
 
-from det3d import __version__, torchie
+from det3d import torchie
 from det3d.models import build_detector
 from det3d.torchie import Config
 from det3d.core.input.voxel_generator import VoxelGenerator
+
+SCORE_THRESH = 0.40
 
 def yaw2quaternion(yaw: float) -> Quaternion:
     return Quaternion(axis=[0,0,1], radians=yaw)
@@ -136,7 +138,7 @@ class Processor_ROS:
         torch.cuda.synchronize()
         print("  network predict time cost:", time.time() - t)
 
-        outputs = remove_low_score_nu(outputs, 0.45)
+        outputs = remove_low_score_nu(outputs, SCORE_THRESH)
 
         boxes_lidar = outputs["box3d_lidar"].detach().cpu().numpy()
         print("  predict boxes:", boxes_lidar.shape)
@@ -229,25 +231,24 @@ if __name__ == "__main__":
 
     global proc
     ## CenterPoint
-    config_path = 'configs/centerpoint/nusc_centerpoint_pp_02voxel_circle_nms_demo.py'
-    model_path = 'models/last.pth'
+    config_path = 'configs/nusc/voxelnet/nusc_centerpoint_voxelnet_0075voxel_dcn.py'
+    model_path = 'work_dirs/nusc_0075_dcn_flip_track/voxelnet_converted.pth'
 
     proc_1 = Processor_ROS(config_path, model_path)
     
     proc_1.initialize()
     
     rospy.init_node('centerpoint_ros_node')
-    sub_lidar_topic = [ "/velodyne_points", 
-                        "/top/rslidar_points",
-                        "/points_raw", 
-                        "/lidar_protector/merged_cloud", 
-                        "/merged_cloud",
-                        "/lidar_top", 
-                        "/roi_pclouds"]
+    sub_lidar_topic = [ "/baraja_lidar_1/sensorhead_1_1", 
+                        "/baraja_lidar_1/sensorhead_1_2", 
+                        "/velodyne/front/points",
+                        "/lidar_top"] # /lidar_top is the nuScenes lidar topic
+    pub_topic = 'pp_boxes'            
+    lidar_topic_idx = 3
+    print('Subscribed to {}, publishing bbox topic: {}'.format(sub_lidar_topic[lidar_topic_idx], pub_topic))
+    sub_ = rospy.Subscriber(sub_lidar_topic[lidar_topic_idx], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
     
-    sub_ = rospy.Subscriber(sub_lidar_topic[5], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
-    
-    pub_arr_bbox = rospy.Publisher("pp_boxes", BoundingBoxArray, queue_size=1)
+    pub_arr_bbox = rospy.Publisher(pub_topic, BoundingBoxArray, queue_size=1)
 
     print("[+] CenterPoint ros_node has started!")    
     rospy.spin()
