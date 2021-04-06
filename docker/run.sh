@@ -2,8 +2,8 @@
 
 VOLUMES="--volume=/tmp/.X11-unix:/tmp/.X11-unix
 		 --volume=/etc/passwd:/etc/passwd 
-		 --volume=${PWD}/..:/home/user/workspace/CenterPoint
-		 --volume=/media/darren/Samsung_T5/datasets/nuScenes:/home/user/workspace/data/nuScenes"
+		 --volume=${PWD}/..:/workspace/CenterPoint
+		 --volume=/media/darren/Samsung_T5/datasets/nuScenes:/workspace/data/nuScenes"
 
 xhost +local:docker
 
@@ -18,9 +18,7 @@ $VOLUMES \
 --env=QT_X11_NO_MITSHM=1 \
 --privileged \
 --net=host \
---user "$(id -u):$(id -g)" \
 --runtime=nvidia \
 --ipc=host \
---workdir="/home/user/workspace" \
---entrypoint="/bin/bash" \
-centerpoint:latest
+--workdir="/workspace" \
+centerpoint:ros-melodic-v2

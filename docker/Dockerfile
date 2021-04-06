@@ -3,16 +3,7 @@ FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 ARG PYTHON_VERSION=3.6
 ARG WITH_TORCHVISION=1
 ARG DEBIAN_FRONTEND="noninteractive"
-
-# Add user
-ARG USERNAME=user
-ARG USER_ID
-ARG GROUP_ID
-RUN groupadd $USERNAME -g ${GROUP_ID}
-RUN useradd -g $GROUP_ID --create-home --shell /bin/bash $USERNAME 
-ENV HOME=/home/$USERNAME
-ENV WORKSPACE=/home/$USERNAME/workspace
-
+ENV WORKSPACE=/workspace
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
          build-essential \
@@ -24,8 +15,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
          libjpeg-dev \
          libpng-dev \
          libssl-dev \
+         libtiff5 \
+         lsb-core \
          python3-opencv \
          software-properties-common && \
+     rm -rf /var/lib/apt/lists/*
+
+# Install ROS 
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN curl -sSL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0xC1CF6E31E6BADE8868B172B4F42ED6FBAB17C654' | apt-key add -
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ros-melodic-desktop \
+        python-rosdep
+RUN rosdep init
+RUN rosdep update
+# RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
+
+# Intalling ROS basic tools
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list'
+RUN wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        python-catkin-tools \
+        python-pip \
+        python-tk \
+        python-rosinstall \
+        python-rosinstall-generator \
+        python-wstool \
+        ros-melodic-jsk-recognition-msgs \
+        ros-melodic-ros-numpy \
+        software-properties-common && \
      rm -rf /var/lib/apt/lists/*
 
 # Install cmake
@@ -78,9 +99,6 @@ RUN git checkout 7342772
 RUN python setup.py bdist_wheel
 RUN cd ./dist && pip install *
 
-# Set python path for loading of modules defined in folders with __init__.py
-# ENV PYTHONPATH="${PYTHONPATH}:$WORKSPACE/CenterPoint"
-
 # Install required files for the program
 COPY requirements.txt /tmp/
 RUN pip install -r /tmp/requirements.txt
@@ -88,12 +106,17 @@ RUN pip install -r /tmp/requirements.txt
 # Clean image
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* 
 
-COPY setup.sh /setup.sh
+COPY setup.sh /
 RUN chmod +x /setup.sh
 CMD [ "/setup.sh" ]
 
 # Add aliases for easy navigation
-USER $USERNAME
 RUN echo "alias data='cd /home/user/workspace/data/nuScenes/full'" >> ~/.bashrc
 RUN echo "alias cpt='cd /home/user/workspace/CenterPoint'" >> ~/.bashrc
 RUN echo "alias ..='cd ..'" >> ~/.bashrc
+
+# setup entrypoint
+COPY ./ros_entrypoint.sh /
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
