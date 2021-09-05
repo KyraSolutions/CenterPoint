@@ -18,7 +18,7 @@ $VOLUMES \
 --env=QT_X11_NO_MITSHM=1 \
 --privileged \
 --net=host \
---runtime=nvidia \
+--gpus=all \
 --ipc=host \
 --workdir="/workspace" \
 centerpoint:ros-melodic-v2
