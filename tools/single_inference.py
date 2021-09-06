@@ -20,6 +20,8 @@ from det3d.models import build_detector
 from det3d.torchie import Config
 from det3d.core.input.voxel_generator import VoxelGenerator
 
+from tools.demo_utils import visual_ros 
+
 SCORE_THRESH = 0.40
 
 def yaw2quaternion(yaw: float) -> Quaternion:
@@ -242,7 +244,7 @@ if __name__ == "__main__":
     sub_lidar_topic = [ "/baraja_lidar_1/sensorhead_1_1", 
                         "/baraja_lidar_1/sensorhead_1_2", 
                         "/velodyne/front/points",
-                        "/lidar_top"] # /lidar_top is the nuScenes lidar topic
+                        "/os_cloud_node/points"] # /lidar_top is the nuScenes lidar topic
     pub_topic = 'pp_boxes'            
     lidar_topic_idx = 3
     print('Subscribed to {}, publishing bbox topic: {}'.format(sub_lidar_topic[lidar_topic_idx], pub_topic))
