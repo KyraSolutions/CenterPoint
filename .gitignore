@@ -13,6 +13,7 @@ venv/
 *.bin
 .vscode/
 *.avi
+*.png
 work_dirs/
 apex/
 nuscenes-devkit/
