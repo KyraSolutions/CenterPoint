@@ -13,6 +13,7 @@ from std_msgs.msg import Header
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import PointCloud2, PointField, Image
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray
+from visualization_msgs.msg import MarkerArray
 from pyquaternion import Quaternion
 
 from det3d import torchie
@@ -20,7 +21,7 @@ from det3d.models import build_detector
 from det3d.torchie import Config
 from det3d.core.input.voxel_generator import VoxelGenerator
 
-from tools.demo_utils import visual, visual_ros 
+from tools.demo_utils import get_marker_array_ros, visual, visual_ros 
 
 SCORE_THRESH = 0.40
 PUB_DETECTION_IMAGE = False
@@ -201,7 +202,7 @@ def xyz_array_to_pointcloud2(points_sum, stamp=None, frame_id=None):
 def rslidar_callback(msg):
     t_t = time.time()
     arr_bbox = BoundingBoxArray()
-
+    
     msg_cloud = ros_numpy.point_cloud2.pointcloud2_to_array(msg)
     np_p = get_xyz_points(msg_cloud, True)
     print("  ")
@@ -240,12 +241,15 @@ def rslidar_callback(msg):
     else:
         arr_bbox.boxes = []
         pub_arr_bbox.publish(arr_bbox)
-       
+    
+    marker_array = get_marker_array_ros(scores, dt_box_lidar, types, msg.header)
+    pub_det_marker_array.publish(marker_array)
+
     print("total callback time: ", time.time() - t_t)
 
 if __name__ == "__main__":
 
-    global proc
+    global procdet_marker_array_pub_topic
     ## CenterPoint
     config_path = 'configs/nusc/voxelnet/nusc_centerpoint_voxelnet_0075voxel_dcn.py'
     model_path = 'work_dirs/nusc_0075_dcn_flip_track/voxelnet_converted.pth'
@@ -261,13 +265,16 @@ if __name__ == "__main__":
                         "/os_cloud_node/points"]
 
     pub_topic = 'pp_boxes'
-    det_img_pub_topic = 'pp_det_image'            
+    det_img_pub_topic = 'pp_det_image'      
+    det_marker_array_pub_topic = "pp_det_marker_array"
+
     lidar_topic_idx = 3
     print('Subscribed to {}, publishing bbox topic: {}'.format(sub_lidar_topic[lidar_topic_idx], pub_topic))
     sub_ = rospy.Subscriber(sub_lidar_topic[lidar_topic_idx], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
     
     pub_arr_bbox = rospy.Publisher(pub_topic, BoundingBoxArray, queue_size=1)
     pub_det_img = rospy.Publisher(det_img_pub_topic, Image, queue_size= 1)
+    pub_det_marker_array = rospy.Publisher(det_marker_array_pub_topic,  MarkerArray, queue_size= 1)
 
     print("[+] CenterPoint ros_node has started!")    
     rospy.spin()

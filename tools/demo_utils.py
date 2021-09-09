@@ -15,8 +15,12 @@ from pyquaternion import Quaternion
 from matplotlib import pyplot as plt 
 
 from sensor_msgs.msg import Image
+from visualization_msgs.msg import Marker, MarkerArray
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import ros_numpy
+
+def yaw2quaternion(yaw: float) -> Quaternion:
+    return Quaternion(axis=[0,0,1], radians=yaw)
 
 def view_points(points: np.ndarray, view: np.ndarray, normalize: bool) -> np.ndarray:
     """
@@ -352,7 +356,32 @@ def visual_ros(points, det, eval_range=35, conf_th=0.5):
     msg = ros_numpy.msgify(Image, npimg, encoding='rgba8')
 
     return msg
+
+def get_marker_array_ros(scores, dt_box_lidar, types, header):
+    marker_array = MarkerArray()
+
+    idx = 0
+    for coords, type, score in zip(dt_box_lidar, types, scores):
+        if score > 0.5:
+            curr_marker = Marker()
+            curr_marker.header = header
+            curr_marker.type = curr_marker.CUBE
+            curr_marker.id = idx
+            q = yaw2quaternion(float(coords[8]))
+            curr_marker.pose.orientation.x = q[1]
+            curr_marker.pose.orientation.y = q[2]
+            curr_marker.pose.orientation.z = q[3]
+            curr_marker.pose.orientation.w = q[0]   
+            curr_marker.scale.x, curr_marker.scale.y, curr_marker.scale.z = coords[4], coords[3], coords[5]
+            curr_marker.color.r, curr_marker.color.g, curr_marker.color.b, curr_marker.color.a = 0, 255, 0, 0.1
+            curr_marker.pose.position.x = float(coords[0])
+            curr_marker.pose.position.y = float(coords[1])
+            curr_marker.pose.position.z = float(coords[2])
+            marker_array.markers.append(curr_marker)
+            idx += 1
     
+    return marker_array
+
 def remove_close(points, radius: float) -> None:
     """
     Removes point too close within a certain radius from origin.
