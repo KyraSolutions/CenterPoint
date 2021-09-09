@@ -11,7 +11,7 @@ import time
 
 from std_msgs.msg import Header
 import sensor_msgs.point_cloud2 as pc2
-from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs.msg import PointCloud2, PointField, Image
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray
 from pyquaternion import Quaternion
 
@@ -20,9 +20,10 @@ from det3d.models import build_detector
 from det3d.torchie import Config
 from det3d.core.input.voxel_generator import VoxelGenerator
 
-from tools.demo_utils import visual_ros 
+from tools.demo_utils import visual, visual_ros 
 
 SCORE_THRESH = 0.40
+PUB_DETECTION_IMAGE = False
 
 def yaw2quaternion(yaw: float) -> Quaternion:
     return Quaternion(axis=[0,0,1], radians=yaw)
@@ -147,12 +148,18 @@ class Processor_ROS:
 
         scores = outputs["scores"].detach().cpu().numpy()
         types = outputs["label_preds"].detach().cpu().numpy()
-
+        
         boxes_lidar[:, -1] = -boxes_lidar[:, -1] - np.pi / 2
 
         print(f"  total cost time: {time.time() - t_t}")
 
-        return scores, boxes_lidar, types
+        # Get the whole output for further usage
+        output_dict = outputs.copy()
+        output_dict["box3d_lidar"] = outputs["box3d_lidar"].detach().cpu().numpy()
+        output_dict["scores"] = outputs["scores"].detach().cpu().numpy()
+        output_dict["label_preds"] = outputs["label_preds"].detach().cpu().numpy()
+
+        return scores, boxes_lidar, types, output_dict
 
 def get_xyz_points(cloud_array, remove_nans=True, dtype=np.float):
     '''
@@ -198,7 +205,7 @@ def rslidar_callback(msg):
     msg_cloud = ros_numpy.point_cloud2.pointcloud2_to_array(msg)
     np_p = get_xyz_points(msg_cloud, True)
     print("  ")
-    scores, dt_box_lidar, types = proc_1.run(np_p)
+    scores, dt_box_lidar, types, det = proc_1.run(np_p)
 
     if scores.size != 0:
         for i in range(scores.size):
@@ -219,16 +226,23 @@ def rslidar_callback(msg):
             bbox.value = scores[i]
             bbox.label = int(types[i])
             arr_bbox.boxes.append(bbox)
-    print("total callback time: ", time.time() - t_t)
+            
     arr_bbox.header.frame_id = msg.header.frame_id
     arr_bbox.header.stamp = msg.header.stamp
+
+    if PUB_DETECTION_IMAGE:
+        ros_img = visual_ros(np_p, det)
+        pub_det_img.publish(ros_img)
+
     if len(arr_bbox.boxes) is not 0:
         pub_arr_bbox.publish(arr_bbox)
         arr_bbox.boxes = []
     else:
         arr_bbox.boxes = []
         pub_arr_bbox.publish(arr_bbox)
-   
+       
+    print("total callback time: ", time.time() - t_t)
+
 if __name__ == "__main__":
 
     global proc
@@ -244,13 +258,16 @@ if __name__ == "__main__":
     sub_lidar_topic = [ "/baraja_lidar_1/sensorhead_1_1", 
                         "/baraja_lidar_1/sensorhead_1_2", 
                         "/velodyne/front/points",
-                        "/os_cloud_node/points"] # /lidar_top is the nuScenes lidar topic
-    pub_topic = 'pp_boxes'            
+                        "/os_cloud_node/points"]
+
+    pub_topic = 'pp_boxes'
+    det_img_pub_topic = 'pp_det_image'            
     lidar_topic_idx = 3
     print('Subscribed to {}, publishing bbox topic: {}'.format(sub_lidar_topic[lidar_topic_idx], pub_topic))
     sub_ = rospy.Subscriber(sub_lidar_topic[lidar_topic_idx], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
     
     pub_arr_bbox = rospy.Publisher(pub_topic, BoundingBoxArray, queue_size=1)
+    pub_det_img = rospy.Publisher(det_img_pub_topic, Image, queue_size= 1)
 
     print("[+] CenterPoint ros_node has started!")    
     rospy.spin()
