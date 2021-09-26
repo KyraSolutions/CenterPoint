@@ -200,6 +200,11 @@ def xyz_array_to_pointcloud2(points_sum, stamp=None, frame_id=None):
     return msg
 
 def rslidar_callback(msg):
+
+    # Modify the message header and timestamp
+    msg.header.stamp = rospy.Time.now()
+    msg.header.frame_id = "lidar_frame"
+    
     t_t = time.time()
     arr_bbox = BoundingBoxArray()
     
@@ -212,7 +217,7 @@ def rslidar_callback(msg):
         for i in range(scores.size):
             bbox = BoundingBox()
             bbox.header.frame_id = msg.header.frame_id
-            bbox.header.stamp = rospy.Time.now()
+            bbox.header.stamp = msg.header.stamp
             q = yaw2quaternion(float(dt_box_lidar[i][8]))
             bbox.pose.orientation.x = q[1]
             bbox.pose.orientation.y = q[2]
@@ -228,8 +233,7 @@ def rslidar_callback(msg):
             bbox.label = int(types[i])
             arr_bbox.boxes.append(bbox)
             
-    arr_bbox.header.frame_id = msg.header.frame_id
-    arr_bbox.header.stamp = msg.header.stamp
+    arr_bbox.header = msg.header
 
     if PUB_DETECTION_IMAGE:
         ros_img = visual_ros(np_p, det)
@@ -244,6 +248,7 @@ def rslidar_callback(msg):
     
     marker_array = get_marker_array_ros(scores, dt_box_lidar, types, msg.header)
     pub_det_marker_array.publish(marker_array)
+    pub_synced_points.publish(msg)
 
     print("total callback time: ", time.time() - t_t)
 
@@ -259,22 +264,25 @@ if __name__ == "__main__":
     proc_1.initialize()
     
     rospy.init_node('centerpoint_ros_node')
-    sub_lidar_topic = [ "/baraja_lidar_1/sensorhead_1_1", 
-                        "/baraja_lidar_1/sensorhead_1_2", 
-                        "/velodyne/front/points",
-                        "/os_cloud_node/points"]
+    
+    # Getting the lidar topic name
+    while not rospy.has_param("lidar_ros_topic"): pass          # waiting while the other systems configure
+    rospy.loginfo("System configured, waiting for input pointclouds")
+    sub_lidar_topic = rospy.get_param("lidar_ros_topic")
 
     pub_topic = 'pp_boxes'
     det_img_pub_topic = 'pp_det_image'      
     det_marker_array_pub_topic = "pp_det_marker_array"
+    synced_points_pub_topic = "points_synced_with_boxes"
 
     lidar_topic_idx = 3
     print('Subscribed to {}, publishing bbox topic: {}'.format(sub_lidar_topic[lidar_topic_idx], pub_topic))
-    sub_ = rospy.Subscriber(sub_lidar_topic[lidar_topic_idx], PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
+    sub_ = rospy.Subscriber(sub_lidar_topic, PointCloud2, rslidar_callback, queue_size=1, buff_size=2**24)
     
     pub_arr_bbox = rospy.Publisher(pub_topic, BoundingBoxArray, queue_size=1)
     pub_det_img = rospy.Publisher(det_img_pub_topic, Image, queue_size= 1)
     pub_det_marker_array = rospy.Publisher(det_marker_array_pub_topic,  MarkerArray, queue_size= 1)
+    pub_synced_points = rospy.Publisher(synced_points_pub_topic, PointCloud2, queue_size= 1)
 
     print("[+] CenterPoint ros_node has started!")    
     rospy.spin()

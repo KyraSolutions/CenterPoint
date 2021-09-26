@@ -354,6 +354,7 @@ def visual_ros(points, det, eval_range=35, conf_th=0.5):
     ag.draw()
     npimg = np.asarray(ag.buffer_rgba())
     msg = ros_numpy.msgify(Image, npimg, encoding='rgba8')
+    msg.header.stamp = rospy.Time.now()
 
     return msg
 
@@ -362,23 +363,22 @@ def get_marker_array_ros(scores, dt_box_lidar, types, header):
 
     idx = 0
     for coords, type, score in zip(dt_box_lidar, types, scores):
-        if score > 0.5:
-            curr_marker = Marker()
-            curr_marker.header = header
-            curr_marker.type = curr_marker.CUBE
-            curr_marker.id = idx
-            q = yaw2quaternion(float(coords[8]))
-            curr_marker.pose.orientation.x = q[1]
-            curr_marker.pose.orientation.y = q[2]
-            curr_marker.pose.orientation.z = q[3]
-            curr_marker.pose.orientation.w = q[0]   
-            curr_marker.scale.x, curr_marker.scale.y, curr_marker.scale.z = coords[4], coords[3], coords[5]
-            curr_marker.color.r, curr_marker.color.g, curr_marker.color.b, curr_marker.color.a = 0, 255, 0, 0.1
-            curr_marker.pose.position.x = float(coords[0])
-            curr_marker.pose.position.y = float(coords[1])
-            curr_marker.pose.position.z = float(coords[2])
-            marker_array.markers.append(curr_marker)
-            idx += 1
+        curr_marker = Marker()
+        curr_marker.header = header
+        curr_marker.type = curr_marker.CUBE
+        curr_marker.id = idx
+        q = yaw2quaternion(float(coords[8]))
+        curr_marker.pose.orientation.x = q[1]
+        curr_marker.pose.orientation.y = q[2]
+        curr_marker.pose.orientation.z = q[3]
+        curr_marker.pose.orientation.w = q[0]   
+        curr_marker.scale.x, curr_marker.scale.y, curr_marker.scale.z = coords[4], coords[3], coords[5]
+        curr_marker.color.r, curr_marker.color.g, curr_marker.color.b, curr_marker.color.a = 0, 255, 0, 0.1
+        curr_marker.pose.position.x = float(coords[0])
+        curr_marker.pose.position.y = float(coords[1])
+        curr_marker.pose.position.z = float(coords[2])
+        marker_array.markers.append(curr_marker)
+        idx += 1
     
     return marker_array
 

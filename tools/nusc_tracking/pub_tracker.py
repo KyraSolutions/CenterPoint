@@ -1,6 +1,12 @@
 import numpy as np
 import copy
-from track_utils import greedy_assignment
+
+# Account for if this file is called from different places
+try:
+  from track_utils import greedy_assignment
+except ImportError:
+  from nusc_tracking.track_utils import greedy_assignment
+
 import copy 
 import importlib
 import sys 

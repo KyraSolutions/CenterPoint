@@ -10,7 +10,7 @@ xhost +local:docker
 # env is for the pop up displays
 # ipc=host is required to increased the shared memory size of the docker container for pytorch dataloader
 docker run \
--it --rm \
+-it \
 $VOLUMES \
 --env=NVIDIA_VISIBLE_DEVICES=all \
 --env=NVIDIA_DRIVER_CAPABILITIES=all \
