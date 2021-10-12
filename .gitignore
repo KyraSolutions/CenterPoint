@@ -17,3 +17,4 @@ venv/
 work_dirs/
 apex/
 nuscenes-devkit/
+spconv/
