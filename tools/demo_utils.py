@@ -362,6 +362,11 @@ def get_marker_array_ros(scores, dt_box_lidar, types, header):
     marker_array = MarkerArray()
 
     idx = 0
+    del_marker = Marker()
+    del_marker.header = header
+    del_marker.type = del_marker.CUBE
+    del_marker.action = del_marker.DELETEALL
+    marker_array.markers.append(del_marker)
     for coords, type, score in zip(dt_box_lidar, types, scores):
         curr_marker = Marker()
         curr_marker.header = header
