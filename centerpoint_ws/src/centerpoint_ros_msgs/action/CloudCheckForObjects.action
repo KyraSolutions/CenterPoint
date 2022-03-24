@@ -1,0 +1,13 @@
+# Check for objects in a pointcloud
+
+# Goal definition
+int16 id
+sensor_msgs/PointCloud2 pointcloud
+
+---
+# Result definition
+int16 id
+jsk_recognition_msgs/BoundingBoxArray bounding_boxes
+
+---
+# Feedback definition

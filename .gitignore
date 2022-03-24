@@ -17,3 +17,5 @@ work_dirs/
 apex/
 nuscenes-devkit/
 spconv/
+centerpoint_ws/*
+!centerpoint_ws/src
